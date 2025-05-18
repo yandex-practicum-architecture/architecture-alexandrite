@@ -1,0 +1,28 @@
+@startuml
+participant MES_API
+participant Redis
+participant S3
+
+activate MES_API
+
+MES_API -> Redis: Проверяет наличие 3D-модели
+activate Redis
+Redis --> MES_API: Возвращает 3D-модель (Cache Hit) или данные не найдены (Cache Miss)
+deactivate Redis
+
+alt Cache Hit
+    Redis --> MES_API: Возвращает 3D-модель
+else Cache Miss
+    Redis --x MES_API: Данные не найдены
+    MES_API -> S3: Загружает 3D-модель
+    activate S3
+    S3 --> MES_API: Возвращает 3D-модель
+    deactivate S3
+    MES_API -> Redis: Сохраняет 3D-модель
+    activate Redis
+    Redis --> MES_API: Подтверждает сохранение
+    deactivate Redis
+end
+
+deactivate MES_API
+@enduml
