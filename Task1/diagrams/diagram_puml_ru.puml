@@ -1,0 +1,51 @@
+@startuml
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Container.puml
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Context.puml
+
+Person(customer, "Customer", "Пользователь может сделать заказ, загрузить 3D модель, работать в 3D конструкторе")
+Person(seller, "Seller", "Работает с заказом, подтверждает производство (создание украшения) для пользователя")
+Person(apiUser, "API user", "Использует API MES для управления заказами и расчётом стоимости")
+Person(operator, "Operator", "Берёт заказ в работу, создаёт украшение")
+
+    Enterprise_Boundary(system, "Система Jewerly Store System") {
+        Container(internetShop, "Internet Shop", "Vue, TypeScript, Threejs", "Позволяет пользователю делать заказ, загружать 3D-модель, работать в 3D конструкторе")
+        Container(shopAPI, "Shop API", "SpringBoot", "Предоставляет список товаров магазина\nПринимает 3D файлы и пользовательскую сгенерированную модель\nСохраняет информацию о заказах с точки зрения клиента")
+        Container(shopDB, "Shop DB", "PostgreSQL", "Хранит основную информацию о работе с клиентами и их заказами")
+        Container(threeDStorage, "3d files storage", "S3-based storage", "Хранит 3D файлы для расчёта стоимости производства")
+        Container(crm, "CRM", "Vue, Typescript", "Веб-клиент для работы продавца с заказами и подтверждения производства")
+        Container(crmAPI, "CRM API", "SpringBoot", "API для CRM, обеспечивает взаимодействие с серверной частью и сообщениями")
+        Container(messageQueue, "Messages Queue", "RabbitMQ", "Отправляет сообщения о новых заказах и изменениях статусов между контейнерами, содержит несколько топиков")
+        Container(mesAPI, "MES API", "C#", "Назначает заказы операторам\nПоказывает список заказов\nРасчитывает стоимость заказа")
+        Container(mesDB, "MES DB", "PostgreSQL", "Хранит информацию о заказах, назначениях операторов и статусах с точки зрения MES")
+        Container(mes, "MES", "React, Typescript", "Интерфейс для операторов:\nназначение заказов, просмотр списка заказов")
+' Связи слева сверху вниз с Интернет-магазином
+internetShop --> shopAPI : "Получает список товаров магазина\nОтправляет 3D модели и файлы"
+shopAPI --> shopDB : "Сохраняет данные о заказах и клиентах"
+shopAPI --> threeDStorage : "Сохраняет 3D файлы для расчёта стоимости"
+
+' Связи продавца с CRM
+crm --> crmAPI : "Обмен данными и командами"
+crmAPI --> threeDStorage : "Доступ к 3D файлам для расчёта"
+crmAPI <-> messageQueue : "Отправляет и получает сообщения о заказах и изменениях статусов"
+
+' Связи пользователя API с MES
+mesAPI --> mesDB : "Хранит заказы и статусы"
+mesAPI --> threeDStorage : "Получает 3D модели для расчётов"
+mesAPI <-> messageQueue : "Обменивается сообщениями о заказах и изменениях статусов"
+
+' Связи оператора с MES
+mes --> mesAPI : "Обмен данными и командами"
+}
+
+' Связи слева сверху вниз с Интернет-магазином
+customer --> internetShop : "Пользователь взаимодействует с интерфейсом"
+
+' Связи продавца с CRM
+seller --> crm : "Работает с заказами, подтверждает производство"
+
+' Связи пользователя API с MES
+apiUser --> mesAPI : "Управляет заказами, назначениями, расчётом стоимости"
+
+' Связи оператора с MES
+operator --> mes : "Работает с заказами через интерфейс"
+@enduml

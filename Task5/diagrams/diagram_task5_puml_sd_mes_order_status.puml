@@ -1,0 +1,16 @@
+@startuml
+participant Operator
+participant MES
+participant MES_API
+participant Redis
+participant MES_DB
+
+Operator -> MES: Изменяет статус заказа
+MES -> MES_API: Отправляет запрос на изменение статуса
+MES_API -> MES_DB: Обновляет статус заказа в MES_DB
+MES_DB --> MES_API: Подтверждает изменение статуса
+MES_API -> Redis: Удаляет список заказов из Redis (Invalidation)
+Redis --> MES_API: Подтверждает удаление
+MES_API --> MES: Подтверждает изменение статуса
+MES --> Operator: Отображает подтверждение
+@enduml

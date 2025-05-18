@@ -1,0 +1,24 @@
+@startuml
+participant Operator
+participant MES
+participant MES_API
+participant Redis
+participant MES_DB
+
+Operator -> MES: Запрашивает список заказов
+MES -> MES_API: Отправляет запрос на список заказов
+MES_API -> Redis: Проверяет наличие данных в Redis (Cache Hit/Miss)
+
+alt Cache Hit
+    Redis --> MES_API: Возвращает список заказов из Redis
+else Cache Miss
+    Redis --x MES_API: Данные не найдены
+    MES_API -> MES_DB: Запрашивает список заказов из MES_DB
+    MES_DB --> MES_API: Возвращает список заказов
+    MES_API -> Redis: Сохраняет список заказов в Redis
+    Redis --> MES_API: Подтверждает сохранение
+end
+
+MES_API --> MES: Возвращает список заказов
+MES --> Operator: Отображает список заказов
+@enduml
